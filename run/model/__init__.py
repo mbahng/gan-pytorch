@@ -1,8 +1,8 @@
 import torch
-from .mlp import * 
-from .cnn import *
 from torch.nn import Module
 from copy import deepcopy
+
+from .gan import *
 
 def init_model(cfg_model: dict) -> Module: 
   """
@@ -12,12 +12,9 @@ def init_model(cfg_model: dict) -> Module:
   name = args.pop("name")
   ckpt_path = args.pop("checkpoint", None) 
   match name: 
-    case "mlp": 
-      print("Loading Model: MLP")
-      model = MLP(**args)
-    case "cnn": 
-      print("Loading Model: CNN")
-      model = CNN(**args)
+    case "gan": 
+      print("Loading Model: GAN")
+      model = GAN(**args)
     case _: 
       raise Exception("Model not defined")
 

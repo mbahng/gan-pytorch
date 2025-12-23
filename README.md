@@ -6,7 +6,7 @@
 
    | Figure 1 | Figure 2 |
    |----------|----------|
-   | ![image](fig/) | ![image](fig/) | 
+   | ![image](saved/fig/mnist_samples.png) | ![image](fig/) | 
    | |  | 
 
 
@@ -30,6 +30,10 @@
       scipy
    ```
 
-# Studies 
+## Implementation Details 
+
+### Model Flexibility 
+
+   In the MLP, even adding one more fully connected layer caused mode collapse, and playing around with the hyperparameters and increasing the discriminator/generator training epoch ratio to 50:1 didn't do anything. 
 
 

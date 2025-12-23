@@ -1,11 +1,13 @@
 from torchvision import transforms, datasets 
 from torch.utils.data import random_split
 from torch.utils.data import Subset
+import torch.nn as nn
 
 def mnist(cfg_dataset: dict): 
   # transform and augment
   transform = transforms.Compose([
-    transforms.ToTensor()
+    transforms.ToTensor(), 
+    nn.Flatten(start_dim=0)
   ])
 
   # split

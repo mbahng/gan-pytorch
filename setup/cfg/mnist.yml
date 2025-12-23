@@ -1,37 +1,39 @@
 name: ""                          # run name 
-n_gpus: 1                         # 0 = cpu, 1 = cuda:0, >1 = multi-gpu setup, will set is_distributed 
-seed: 1
+n_gpus: 0                         # 0 = cpu, 1 = cuda:0, >1 = multi-gpu setup
+seed: 0
 
 dataset: 
-  name: "mnist"                        # name of the dataset 
+  name: "mnist"                        # name of the dataset [mnist, cifar10, svhn, celeba]
   split: [0.6, 0.2, 0.2]          # train/val/test split. If the split is provided, then it ignores this. If there is already a train/test split, then we divide the train set into train/val split according to the ratio of the first two elements of the tuple. 
   train: 
     subsample: 1.0                # To speed up train runs for initial debugging. Either an int > 1 representing number of samples to truncate from, or float in [0, 1] representing portion of dataset to train on
-    batch_size: 128
-    shuffle: True
+    batch_size: 32
     num_workers: 1
+    shuffle: True
+    pin_memory: True
     # augmentation: []              # potential augmentation 
-    
   val: 
     subsample: 1.0
-    batch_size: 128
-    shuffle: True
+    batch_size: 32
     num_workers: 1
+    shuffle: False 
+    pin_memory: True
   test: 
     subsample: 1.0
-    batch_size: 128
-    shuffle: True
+    batch_size: 32
     num_workers: 1
+    shuffle: False 
+    pin_memory: True
 
 run: 
   epoch: 0
-  total_epochs: 3
+  total_epochs: 50
 
-  model:
-    name: "cnn"   
+  model:                              # each model has different hyperparameters, so case-by-case  
+    name: "gan"
     checkpoint: ""
-    # all arguments to class constructor should be here
-    in_channels: 1
+    data_dim: 784 
+    latent_dim: 100
 
   loss: 
     name: "ce"
@@ -39,11 +41,11 @@ run:
     l1: 0.0                         # l1 loss, added directly to weights of model
 
   optimizer: 
-    name: "sgd"                        # sgd, adam 
+    name: "adam"                        # sgd, adam 
     checkpoint: ""                  # checkpoint path to optimizer
-    lr: 1e-5                        # learning rate
+    lr: 2e-4                        # learning rate
     momentum: 0.0                   # momentum, only relevant for SGD
-    betas: [0.9, 0.999]             # betas, relevant only for Adam
+    betas: [0.5, 0.999]             # betas, relevant only for Adam
     weight_decay: 0.0
 
 log:
@@ -53,6 +55,7 @@ log:
   save_metrics: True
   save_every: 5
   wandb: 
-    enabled: False
+    enabled: True
     entity: "bahngmc-duke-university" 
-    project: "normalizing-flows"
+    project: "gan-pytorch"
+

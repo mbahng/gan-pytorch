@@ -7,9 +7,9 @@ def init_loss(cfg_loss: dict):
     case 'mse' | 'l2':
       return MSE()
     case 'cross_entropy' | 'ce':
-      return CrossEntropy()
+      return CrossEntropy() 
     case _:
-      raise Exception("Loss not implemented.")
+      raise CrossEntropy()
 
 
 class Loss(nn.Module):
@@ -40,3 +40,5 @@ class CrossEntropy(Loss):
   
   def forward(self, pred, target):
     return F.cross_entropy(pred, target, weight=self.weight, reduction=self.reduction)
+  
+

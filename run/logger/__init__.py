@@ -9,6 +9,7 @@ import wandb
 import json
 from torch.nn.parallel import DistributedDataParallel as DDP
 from typing import Dict
+import torchvision
 
 class Logger: 
   """
@@ -107,16 +108,7 @@ class Logger:
     """Explicitly log a message to both console and file"""
     self.write(message)
 
-  def _save_model(self, model: Module|DDP, epoch: int): 
-    if isinstance(model, DDP): 
-      torch.save(model.module.state_dict(), os.path.join(self.savedir, str(epoch).zfill(4), "model.pt"))
-    else: 
-      torch.save(model.state_dict(), os.path.join(self.savedir, str(epoch).zfill(4), "model.pt"))
-
-  def _save_optimizer(self, optimizer: Optimizer, epoch: int): 
-    torch.save(optimizer.state_dict(), os.path.join(self.savedir, str(epoch).zfill(4), "optimizer.pt"))
-
-  def _is_main_process(self): 
+  def _is_main_process(self):
     if self.is_distributed and self.device != 0: 
       return False 
     return True
@@ -125,15 +117,25 @@ class Logger:
     """
     Main saving function for saving models and optimizers
     """
+
+    def _save_model(model: Module|DDP, epoch: int): 
+      if isinstance(model, DDP): 
+        torch.save(model.module.state_dict(), os.path.join(self.savedir, str(epoch).zfill(4), "model.pt"))
+      else: 
+        torch.save(model.state_dict(), os.path.join(self.savedir, str(epoch).zfill(4), "model.pt"))
+
+    def _save_optimizer(optimizer: Optimizer, epoch: int): 
+      torch.save(optimizer.state_dict(), os.path.join(self.savedir, str(epoch).zfill(4), "optimizer.pt"))
+
     if not self._is_main_process(): 
       return
     if epoch % self.save_every != 0: 
       return 
     os.makedirs(os.path.join(self.savedir, str(epoch).zfill(4)), exist_ok=True)
     if self.save_model:
-      self._save_model(trainer.model, epoch) 
+      _save_model(trainer.model, epoch) 
     if self.save_optimizer: 
-      self._save_optimizer(trainer.optimizer, epoch) 
+      _save_optimizer(trainer.optimizer, epoch) 
 
   def save_metrics(self, metrics: Dict, epoch: int): 
     """
@@ -147,5 +149,16 @@ class Logger:
 
     if self.wandb_enabled and self.wandb_logger is not None:
       self.wandb_logger.log(metrics, step=epoch)
+
+  def generate_images(self, generator, epoch: int): 
+    z = generator.sample(12) 
+    x = generator.forward(z).reshape(-1, 1, 28, 28)
+
+    grid = torchvision.utils.make_grid(x, nrow=4)
+
+    if self.wandb_enabled and self.wandb_logger is not None:
+        self.wandb_logger.log({
+            "generated_samples": wandb.Image(grid, caption=f"Epoch {epoch}")
+        }, step=epoch)
 
 

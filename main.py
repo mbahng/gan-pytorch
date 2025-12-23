@@ -39,38 +39,31 @@ def main(cfg: Config):
   print(f"Epoch: {cfg['run']['epoch']}")
   pprint(metrics)
   logger.save_state(trainer, epoch=cfg["run"]["epoch"])
+  logger.generate_images(model.generator, epoch=cfg["run"]["epoch"])
 
-  try:
-    for epoch in range(cfg["run"]["epoch"] + 1, cfg["run"]["total_epochs"]):
-      train_metrics = trainer.train()
-      val_metrics = trainer.val()
-      metrics = {"train": train_metrics, "val": val_metrics}
-
-      print(f"Epoch: {epoch}")
-      pprint(metrics)
-
-      logger.save_metrics(metrics, epoch)
-      logger.save_state(trainer, epoch)
-
-    # final epoch with test dataset evaluation
+  for epoch in range(cfg["run"]["epoch"] + 1, cfg["run"]["total_epochs"]):
     train_metrics = trainer.train()
     val_metrics = trainer.val()
-    test_metrics = trainer.test()
-    metrics = {"train": train_metrics, "val": val_metrics, "test": test_metrics}
+    metrics = {"train": train_metrics, "val": val_metrics}
 
-    print(f"Epoch: {cfg['run']['total_epochs']}")
+    print(f"Epoch: {epoch}")
     pprint(metrics)
 
-    logger.save_metrics(metrics, cfg['run']['total_epochs'])
-    logger.save_state(trainer, cfg['run']['total_epochs'])
+    logger.save_metrics(metrics, epoch)
+    logger.save_state(trainer, epoch)
+    logger.generate_images(model.generator, epoch)
 
-  except KeyboardInterrupt:
-    print("Run Failed. Keyboard Interrupt.")
-    print(f"Logs in: {cfg['log']['savedir']}")
+  # final epoch with test dataset evaluation
+  train_metrics = trainer.train()
+  val_metrics = trainer.val()
+  test_metrics = trainer.test()
+  metrics = {"train": train_metrics, "val": val_metrics, "test": test_metrics}
 
-  except Exception as e: 
-    print(e) 
-    print(f"Run Failed. Logs in: {cfg['log']['savedir']}")
+  print(f"Epoch: {cfg['run']['total_epochs']}")
+  pprint(metrics)
+
+  logger.save_metrics(metrics, cfg['run']['total_epochs'])
+  logger.save_state(trainer, cfg['run']['total_epochs'])
 
 
 def ddp_setup(rank, world_size):
@@ -133,6 +126,7 @@ def main_distributed(rank: int, cfg: Config):
   agg_metrics = aggregate_metrics(metrics, rank)
 
   logger.save_metrics(agg_metrics, epoch=cfg["run"]["epoch"])
+  logger.generate_images(model.generator, epoch=cfg["run"]["epoch"])
   print(f"Epoch: {cfg['run']['epoch']}")
   pprint(agg_metrics)
   logger.save_state(trainer, epoch=cfg["run"]["epoch"])

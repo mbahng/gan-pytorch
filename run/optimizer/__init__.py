@@ -14,7 +14,7 @@ def init_optimizer(cfg_optim: dict, model: nn.Module):
     case "adam": 
       optimizer = optim.Adam(
           params=model.parameters(), 
-          lr=cfg_optim["lr"], 
+          lr=float(cfg_optim["lr"]), 
           betas=cfg_optim["betas"],
           weight_decay=cfg_optim["weight_decay"]) 
     case _: 
