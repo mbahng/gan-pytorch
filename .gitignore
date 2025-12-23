@@ -1,0 +1,12 @@
+__pycache__/
+**/.DS_Store
+
+saved/**
+!saved/fig/
+
+dataset/*
+!dataset/__init__.py
+!dataset/language.py
+!dataset/vision.py
+!dataset/one_dim.py
+
