@@ -1,12 +1,11 @@
-# \[Name\]
+# gan-pytorch
 
-   \[Abstract\]
+   An implementation of variants of GANs. 
 
-   Teaser figures. MNIST generated samples. 
-
-   ![image](saved/fig/mnist_samples.png =300x)
-
-   ![image](saved/fig/teaser.png) 
+   | Figure 1 | Figure 2 |
+   |----------|----------|
+   | <img src="saved/fig/mnist_samples.png" width="900"> | ![image](saved/fig/teaser.png) | 
+   | |  | 
 
 
    Setup conda env. 
