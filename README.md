@@ -4,7 +4,7 @@
 
    Teaser figures. MNIST generated samples. 
 
-   ![image](saved/fig/mnist_samples.png 300x)
+   ![image](saved/fig/mnist_samples.png =300x)
 
    ![image](saved/fig/teaser.png) 
 
