@@ -28,6 +28,12 @@ def init_dataset(cfg_dataset: dict) -> Tuple[Dataset, Dataset, Dataset]:
     case "mnist_flat": 
       print("Loading dataset: MNIST Flat")
       train_ds, val_ds, test_ds = mnist_flat(cfg_dataset) 
+    case "two_gaussians": 
+      print("Loading dataset: Two Gaussians")
+      train_ds, val_ds, test_ds = two_gaussians(cfg_dataset)
+    case "moons": 
+      print("Loading dataset: Moons")
+      train_ds, val_ds, test_ds = moons(cfg_dataset)
     case _: 
       raise Exception("Not a valid dataset.")
 
@@ -47,43 +53,79 @@ def init_dataset(cfg_dataset: dict) -> Tuple[Dataset, Dataset, Dataset]:
 
   return train_ds, val_ds, test_ds
 
+def collate(batch):
+  """
+  Standardizes batches from different dataset formats into a unified dictionary.
+  Handles:
+    - (image, label) tuples
+    - (image,) single-item tuples
+    - raw image tensors
+  """
+  images = []
+  labels = []
+  
+  # Check if the first sample is a sequence AND has at least 2 elements
+  has_labels = isinstance(batch[0], (tuple, list)) and len(batch[0]) > 1
+
+  for item in batch:
+    if has_labels:
+      # Assume format is (image, label, ...)
+      images.append(item[0])
+      labels.append(item[1])
+    else:
+      # Handle (image,) or raw tensor
+      if isinstance(item, (tuple, list)):
+        images.append(item[0])
+      else:
+        images.append(item)
+
+  res = {"x": torch.stack(images)}
+  
+  if has_labels:
+    if isinstance(labels[0], torch.Tensor):
+      res["y"] = torch.stack(labels)
+    else:
+      res["y"] = torch.tensor(labels)
+  
+  return res
+
 def init_dataloader(cfg_dataset: dict) -> Tuple[DataLoader, DataLoader, DataLoader]: 
   train_ds, val_ds, test_ds = init_dataset(cfg_dataset)
 
   if cfg_dataset["is_distributed"]: 
-    if cfg_dataset["train"]["shuffle"] or cfg_dataset["val"]["shuffle"] or cfg_dataset["test"]["shuffle"]: 
+    if cfg_dataset["train"]["shuffle"]: 
       UserWarning("You have turned shuffle on when using distributed. Shuffle will be forced off.")
       cfg_dataset["train"]["shuffle"] = False
-      cfg_dataset["val"]["shuffle"] = False
-      cfg_dataset["test"]["shuffle"] = False
 
     train_dl = DataLoader(train_ds, 
                           batch_size=cfg_dataset["train"]["batch_size"], 
                           shuffle=cfg_dataset["train"]["shuffle"], 
                           num_workers=cfg_dataset["train"]["num_workers"],
-                          sampler=DistributedSampler(train_ds, seed=cfg_dataset["seed"]))
+                          sampler=DistributedSampler(train_ds, seed=cfg_dataset["seed"]),
+                          collate_fn=collate)
     val_dl = DataLoader(val_ds, 
                         batch_size=cfg_dataset["val"]["batch_size"], 
-                        shuffle=cfg_dataset["val"]["shuffle"], 
                         num_workers=cfg_dataset["val"]["num_workers"],
-                        sampler=DistributedSampler(val_ds, seed=cfg_dataset["seed"]))
+                        sampler=DistributedSampler(val_ds, seed=cfg_dataset["seed"]),
+                        collate_fn=collate)
     test_dl = DataLoader(test_ds, 
                          batch_size=cfg_dataset["test"]["batch_size"], 
-                         shuffle=cfg_dataset["test"]["shuffle"], 
                          num_workers=cfg_dataset["test"]["num_workers"],
-                         sampler=DistributedSampler(test_ds, seed=cfg_dataset["seed"]))
+                         sampler=DistributedSampler(test_ds, seed=cfg_dataset["seed"]),
+                         collate_fn=collate)
   else: 
     train_dl = DataLoader(train_ds, 
                           batch_size=cfg_dataset["train"]["batch_size"], 
                           shuffle=cfg_dataset["train"]["shuffle"], 
-                          num_workers=cfg_dataset["train"]["num_workers"])
+                          num_workers=cfg_dataset["train"]["num_workers"], 
+                          collate_fn=collate)
     val_dl = DataLoader(val_ds, 
                         batch_size=cfg_dataset["val"]["batch_size"], 
-                        shuffle=cfg_dataset["val"]["shuffle"], 
-                        num_workers=cfg_dataset["val"]["num_workers"])
+                        num_workers=cfg_dataset["val"]["num_workers"], 
+                        collate_fn=collate)
     test_dl = DataLoader(test_ds, 
                          batch_size=cfg_dataset["test"]["batch_size"], 
-                         shuffle=cfg_dataset["test"]["shuffle"], 
-                         num_workers=cfg_dataset["test"]["num_workers"])
+                         num_workers=cfg_dataset["test"]["num_workers"], 
+                         collate_fn=collate)
 
   return train_dl, val_dl, test_dl

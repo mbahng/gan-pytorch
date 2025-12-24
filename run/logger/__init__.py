@@ -10,6 +10,10 @@ import json
 from torch.nn.parallel import DistributedDataParallel as DDP
 from typing import Dict
 import torchvision
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
 
 class Logger: 
   """
@@ -150,6 +154,9 @@ class Logger:
     if self.wandb_enabled and self.wandb_logger is not None:
       self.wandb_logger.log(metrics, step=epoch)
 
+  def save_weights(self, model, epoch: int): 
+    ...
+
   def generate_images(self, generator, epoch: int): 
     z = generator.sample(12) 
     x = generator.forward(z).reshape(-1, 1, 28, 28)
@@ -161,4 +168,72 @@ class Logger:
             "generated_samples": wandb.Image(grid, caption=f"Epoch {epoch}")
         }, step=epoch)
 
+  def generate_distribution(self, model, real_data, epoch: int): 
+    if not self.wandb_enabled or self.wandb_logger is None:
+      return
+
+    # 1. Create grid for decision boundary
+    range_limit = 8 
+    x = np.linspace(-range_limit, range_limit, 100)
+    y = np.linspace(-range_limit, range_limit, 100)
+    X, Y = np.meshgrid(x, y)
+    grid = torch.tensor(np.stack([X.flatten(), Y.flatten()], axis=1), dtype=torch.float32)
+
+    # Move to device
+    device = next(model.parameters()).device
+    grid = grid.to(device)
+
+    # Get discriminator output
+    with torch.no_grad():
+        D_out = model.discriminator(grid).cpu().numpy().reshape(100, 100)
+
+    # 2. Sample from generator for density
+    z = model.generator.sample(10000).to(device)
+    with torch.no_grad():
+        G_out = model.generator(z).cpu().numpy()
+
+    # 3. Plot
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+    
+    # Process real data if available
+    real_data_np = None
+    if real_data is not None:
+        if torch.is_tensor(real_data):
+            real_data_np = real_data.cpu().numpy()
+        else:
+            real_data_np = real_data
+
+    # --- Plot 1: Generator Samples ---
+    ax = axes[0]
+    if real_data_np is not None:
+        ax.scatter(real_data_np[:, 0], real_data_np[:, 1], c='black', alpha=0.1, s=5, label='Real Data')
+    
+    # Generated samples scatter plot
+    ax.scatter(G_out[:, 0], G_out[:, 1], c='blue', alpha=0.1, s=5, label='Generated Data')
+    
+    ax.set_xlim([-range_limit, range_limit])
+    ax.set_ylim([-range_limit, range_limit])
+    ax.set_title(f"Generator Samples (Epoch {epoch})")
+    ax.legend()
+
+    # --- Plot 2: Discriminator Output ---
+    ax = axes[1]
+    if real_data_np is not None:
+        ax.scatter(real_data_np[:, 0], real_data_np[:, 1], c='black', alpha=0.2, s=5, label='Real Data')
+
+    # Discriminator heatmap
+    cont = ax.contourf(X, Y, D_out, levels=20, cmap='RdBu_r', alpha=0.8, vmin=0, vmax=1)
+    fig.colorbar(cont, ax=ax, label='D(x) Probability')
+
+    ax.set_xlim([-range_limit, range_limit])
+    ax.set_ylim([-range_limit, range_limit])
+    ax.set_title(f"Discriminator Probability (Epoch {epoch})")
+    ax.legend()
+
+    # 4. Log to wandb
+    self.wandb_logger.log({
+        "distribution": wandb.Image(fig, caption=f"Epoch {epoch}")
+    }, step=epoch)
+    
+    plt.close(fig)
 

@@ -1,0 +1,62 @@
+name: ""                          # run name 
+n_gpus: 0                         # 0 = cpu, 1 = cuda:0, >1 = multi-gpu setup
+seed: 1
+
+dataset: 
+  name: "moons"                        # name of the dataset [mnist, cifar10, svhn, celeba]
+  split: [0.6, 0.2, 0.2]          # train/val/test split. If the split is provided, then it ignores this. If there is already a train/test split, then we divide the train set into train/val split according to the ratio of the first two elements of the tuple. 
+  train: 
+    subsample: 1.0                # To speed up train runs for initial debugging. Either an int > 1 representing number of samples to truncate from, or float in [0, 1] representing portion of dataset to train on
+    batch_size: 32
+    num_workers: 1
+    shuffle: True
+    pin_memory: True
+    # augmentation: []              # potential augmentation 
+  val: 
+    subsample: 1.0
+    batch_size: 32
+    num_workers: 1
+    shuffle: False 
+    pin_memory: True
+  test: 
+    subsample: 1.0
+    batch_size: 32
+    num_workers: 1
+    shuffle: False 
+    pin_memory: True
+
+run: 
+  epoch: 0
+  total_epochs: 10
+
+  model:                              # each model has different hyperparameters, so case-by-case  
+    name: "gan"
+    checkpoint: ""
+    data_dim: 2
+    latent_dim: 100
+
+  loss: 
+    name: "ce"
+    # direct hyperparameter weights 
+    l1: 0.0                         # l1 loss, added directly to weights of model
+
+  optimizer: 
+    name: "adam"                        # sgd, adam 
+    checkpoint: ""                  # checkpoint path to optimizer
+    lr: 2e-4                        # learning rate
+    momentum: 0.0                   # momentum, only relevant for SGD
+    betas: [0.5, 0.999]             # betas, relevant only for Adam
+    weight_decay: 0.0
+
+log:
+  savedir: ""                       # will be overrided by save/name
+  save_model: True 
+  save_optimizer: True
+  save_metrics: True
+  save_every: 5
+  wandb: 
+    enabled: True
+    entity: "bahngmc-duke-university" 
+    project: "gan-pytorch"
+
+

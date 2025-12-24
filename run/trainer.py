@@ -46,9 +46,10 @@ class Trainer:
     # Get the original terminal stdout if logger has redirected it
     tqdm_file = getattr(sys.stdout, 'terminal', sys.stdout)
 
-    for i, (x_true, _) in enumerate(tqdm(self.train_dl, leave=False, file=tqdm_file)): 
+    for i, batch in enumerate(tqdm(self.train_dl, leave=False, file=tqdm_file)): 
+      x_true = batch["x"]
       # Set up gradients based on the current step (Discriminator vs Generator)
-      if i % 50 != 0: 
+      if i % 2 != 0: 
         # train discriminator
         self.model.discriminator.toggle_grad(True)
         self.model.generator.toggle_grad(False)
@@ -95,7 +96,8 @@ class Trainer:
     # Get the original terminal stdout if logger has redirected it
     tqdm_file = getattr(sys.stdout, 'terminal', sys.stdout)
 
-    for i, (x_true, _) in enumerate(tqdm(self.val_dl, leave=False, file=tqdm_file)): 
+    for i, batch in enumerate(tqdm(self.train_dl, leave=False, file=tqdm_file)): 
+      x_true = batch["x"]
       # sample minibatch from the true data generating distribution
       x_true = x_true.to(self.device) 
       # sample minibatch from the generator
@@ -129,7 +131,8 @@ class Trainer:
     # Get the original terminal stdout if logger has redirected it
     tqdm_file = getattr(sys.stdout, 'terminal', sys.stdout)
 
-    for i, (x_true, _) in enumerate(tqdm(self.test_dl, leave=False, file=tqdm_file)): 
+    for i, batch in enumerate(tqdm(self.train_dl, leave=False, file=tqdm_file)): 
+      x_true = batch["x"]
       # sample minibatch from the true data generating distribution
       x_true = x_true.to(self.device) 
       # sample minibatch from the generator

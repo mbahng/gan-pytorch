@@ -2,12 +2,11 @@
 
    \[Abstract\]
 
-   Teaser figures. 
+   Teaser figures. MNIST generated samples. 
 
-   | Figure 1 | Figure 2 |
-   |----------|----------|
-   | ![image](saved/fig/mnist_samples.png) | ![image](fig/) | 
-   | |  | 
+   ![image](saved/fig/mnist_samples.png 300x)
+
+   ![image](saved/fig/teaser.png) 
 
 
    Setup conda env. 

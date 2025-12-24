@@ -39,7 +39,14 @@ def main(cfg: Config):
   print(f"Epoch: {cfg['run']['epoch']}")
   pprint(metrics)
   logger.save_state(trainer, epoch=cfg["run"]["epoch"])
-  logger.generate_images(model.generator, epoch=cfg["run"]["epoch"])
+  
+  # Extract a batch of real data for visualization if needed
+  real_batch = next(iter(train_dl))["x"] if cfg["run"]["model"]["data_dim"] == 2 else None
+
+  if cfg["run"]["model"]["data_dim"] == 2:
+    logger.generate_distribution(model, real_batch, epoch=cfg["run"]["epoch"])
+  else:
+    logger.generate_images(model.generator, epoch=cfg["run"]["epoch"])
 
   for epoch in range(cfg["run"]["epoch"] + 1, cfg["run"]["total_epochs"]):
     train_metrics = trainer.train()
@@ -51,7 +58,10 @@ def main(cfg: Config):
 
     logger.save_metrics(metrics, epoch)
     logger.save_state(trainer, epoch)
-    logger.generate_images(model.generator, epoch)
+    if cfg["run"]["model"]["data_dim"] == 2:
+      logger.generate_distribution(model, real_batch, epoch)
+    else:
+      logger.generate_images(model.generator, epoch)
 
   # final epoch with test dataset evaluation
   train_metrics = trainer.train()
@@ -125,8 +135,14 @@ def main_distributed(rank: int, cfg: Config):
   # Aggregate metrics across all GPUs
   agg_metrics = aggregate_metrics(metrics, rank)
 
+  # Extract a batch of real data for visualization if needed
+  real_batch = next(iter(train_dl))["x"] if cfg["run"]["model"]["data_dim"] == 2 else None
+
   logger.save_metrics(agg_metrics, epoch=cfg["run"]["epoch"])
-  logger.generate_images(model.generator, epoch=cfg["run"]["epoch"])
+  if cfg["run"]["model"]["data_dim"] == 2:
+    logger.generate_distribution(model.module, real_batch, epoch=cfg["run"]["epoch"])
+  else:
+    logger.generate_images(model.module.generator, epoch=cfg["run"]["epoch"])
   print(f"Epoch: {cfg['run']['epoch']}")
   pprint(agg_metrics)
   logger.save_state(trainer, epoch=cfg["run"]["epoch"])
@@ -145,6 +161,10 @@ def main_distributed(rank: int, cfg: Config):
 
       logger.save_metrics(agg_metrics, epoch)
       logger.save_state(trainer, epoch)
+      if cfg["run"]["model"]["data_dim"] == 2:
+        logger.generate_distribution(model.module, real_batch, epoch)
+      else:
+        logger.generate_images(model.module.generator, epoch)
 
     train_metrics = trainer.train()
     val_metrics = trainer.val()

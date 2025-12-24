@@ -6,13 +6,16 @@ from torchvision import transforms, datasets
 from torch.utils.data import random_split
 from torch.utils.data import Subset
 
-def two_gaussians(x = 0.8, N=100):
-  gaussian1 = 4 + math.sqrt(x) * torch.randn(N, 2)
-  gaussian2 = -4 + (1/math.sqrt(x)) * torch.randn(N, 2)
+def two_gaussians(cfg_dataset: dict):
+  N = 10000
+  variance = 0.8
+  gaussian1 = 4 + math.sqrt(variance) * torch.randn(N, 2)
+  gaussian2 = -4 + (1/math.sqrt(variance)) * torch.randn(N, 2)
   mask = (torch.rand(N) > 0.5).unsqueeze(1).expand(N, 2)
   Y = mask * gaussian1 + (~mask) * gaussian2
-  ds = TensorDataset(Y)
-  return ds
+  ds = TensorDataset(Y) 
+  train_ds, val_ds, test_ds = torch.utils.data.random_split(ds, cfg_dataset["split"])
+  return train_ds, val_ds, test_ds
 
 def four_gaussians(N=100):
   """
@@ -42,13 +45,17 @@ def four_gaussians(N=100):
   ds = TensorDataset(Y)
   return ds
 
-def moon(N=100, noise=0.05): 
+def moons(cfg_dataset: dict): 
   """
   Toy dataset consisting of two cresent moons
   """
+  N = 100000
+  noise = 0.05
   Y, _ = make_moons(N, noise=noise) 
   Y = torch.tensor(4 * Y, dtype=torch.float)
-  return TensorDataset(Y)
+  ds = TensorDataset(Y)
+  train_ds, val_ds, test_ds = torch.utils.data.random_split(ds, cfg_dataset["split"])
+  return train_ds, val_ds, test_ds
 
 def circles(N=100, scale=0.5, noise=0.05): 
   """
@@ -68,22 +75,3 @@ def swiss_roll(N = 100, noise = 0.05):
   Y, _ = swiss_roll(N, noise=noise) 
   Y = torch.tensor(4 * Y, dtype=torch.float) 
   return TensorDataset(Y)
-
-def mnist_flat(cfg_dataset: dict): 
-  # transform and augment
-  transform = transforms.Compose([
-    transforms.ToTensor(), 
-    transforms.Lambda(lambda x: torch.flatten(x))
-  ])
-
-  # split
-  train_split, val_split, _ = cfg_dataset["split"] 
-  total_split = train_split + val_split
-  train_split = train_split / total_split
-  val_split = val_split / total_split
-  ds = datasets.MNIST(root='./dataset', train=True, transform=transform, download=True) 
-  train_ds, val_ds = random_split(ds, [train_split, val_split])
-  test_ds = datasets.MNIST(root='./dataset', train=False, transform=transform, download=True) 
-
-  return train_ds, val_ds, test_ds
-
